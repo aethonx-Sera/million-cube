@@ -64,8 +64,8 @@ def create_checkout_session():
             "quantity": 1,
         }],
         mode="payment",
-        success_url="http://127.0.0.1:8000/?payment=success",
-        cancel_url="http://127.0.0.1:8000/?payment=cancel",
+        success_url="https://million-cube.onrender.com/?payment=success",
+        cancel_url="https://million-cube.onrender.com/?payment=cancel",
         metadata={"cube_id": str(cube_id)},
     )
 
