@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Million Cubes</title>
+
+<style>
+body {
+  background: #111;
+  color: white;
+  font-family: Arial;
+  text-align: center;
+}
+
+h1 {
+  font-size: 40px;
+}
+
+#grid {
+  display: grid;
+  grid-template-columns: repeat(20, 45px);
+  gap: 5px;
+  justify-content: center;
+}
+
+.cube {
+  width: 45px;
+  height: 45px;
+  background: white;
+  color: black;
+  border-radius: 5px;
+}
+.cube:disabled {
+    background: #555;
+    color: #aaa;
+    cursor: not-allowed;
+}
+</style>
+
+</head>
+
+<body>
+
+<h1>Million Cubes</h1>
+<p>1.000.000 di cubetti - 1 euro ciascuno</p>
+
+<div id="grid"></div>
+<div id="pagination">
+    <button id="prevPage">← Precedente</button>
+    <span id="pageInfo">Pagina 1 di 1000</span>
+    <button id="nextPage">Successiva →</button>
+<input id="pageInput" type="number" min="1" max="1000" placeholder="Pagina">
+<button id="goPage">Vai</button>
+</div>
+<div id="panel" style="display:none;">
+  <h2 id="cubeTitle"></h2>
+  <p>Prezzo: 1,00 €</p>
+  <p id="status">Disponibile</p>
+  <button id="buyButton">Acquista per 1,00 €</button>
+</div>
+
+<script>
+const grid = document.getElementById("grid");
+let soldCubes = [];
+let selectedCube = null;
+const cubesPerPage = 1000;
+const totalPages = 1000;
+let currentPage = 1;
+
+async function loadSoldCubes() {
+    const response = await fetch("/api/sold");
+    const data = await response.json();
+    soldCubes = data.sold.map(item => item.cube_id);
+    renderPage();
+}
+
+function renderPage() {
+    grid.innerHTML = "";
+document.getElementById("pageInfo").textContent =
+  "Pagina " + currentPage + " di " + totalPages;
+
+    const start = (currentPage - 1) * cubesPerPage + 1;
+    const end = currentPage * cubesPerPage;
+
+    for (let i = start; i <= end; i++) {
+  const cube = document.createElement("button");
+  cube.className = "cube";
+  cube.textContent = i;
+if (soldCubes.includes(i)) {
+cube.disabled = true;
+}
+cube.onclick = () => {
+selectedCube = i;
+document.getElementById("panel").style.display = "block";
+document.getElementById("cubeTitle").textContent = "Cubetto #" + i;
+document.getElementById("status").textContent = "Disponibile";
+buyButton.disabled = false;
+};
+grid.appendChild(cube);
+}
+}
+const buyButton = document.getElementById("buyButton");
+buyButton.onclick = async () => {
+    if (selectedCube === null || soldCubes.includes(selectedCube)) return;
+
+    const response = await fetch('/api/create-checkout-session', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ cube_id: selectedCube })
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+        alert(data.error || 'Errore durante la creazione del pagamento');
+        return;
+    }
+
+    window.location.href = data.url;
+};
+document.getElementById("prevPage").onclick = () => {
+  if (currentPage > 1) {
+    currentPage--;
+    renderPage();
+  }
+};
+
+document.getElementById("nextPage").onclick = () => {
+  if (currentPage < totalPages) {
+    currentPage++;
+    renderPage();
+  }
+};
+document.getElementById("goPage").onclick = () => {
+    const page = parseInt(document.getElementById("pageInput").value);
+
+    if (page >= 1 && page <= totalPages) {
+        currentPage = page;
+        renderPage();
+    }
+};
+loadSoldCubes();
+</script>
+</body>
+</html>
+

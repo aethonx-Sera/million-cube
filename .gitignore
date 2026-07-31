@@ -1,0 +1,8 @@
+venv/
+_pycache_/
+*.pyc
+million_cubes.db
+app_sandbox_backup.py
+index_sandbox_backup.html
+.env
+
