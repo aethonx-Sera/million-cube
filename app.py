@@ -28,7 +28,7 @@ def get_sold():
         for row in rows
     ]
     }
-#@app.route("/api/sold", methods=["POST"])
+@app.route("/api/sold", methods=["POST"])
 def add_sold():
     data = request.get_json()
     cube_id = int(data["cube_id"])
