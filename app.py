@@ -26,32 +26,45 @@ def init_db():
 init_db()
 @app.route("/api/sold")
 def get_sold():
-    conn = sqlite3.connect("million_cubes.db")
-    rows = conn.execute("SELECT cube_id, sold_at FROM sold_cubes").fetchall()
+    conn = get_conn()
+    cur = conn.cursor()
+
+    cur.execute("SELECT cube_id, sold_at FROM sold_cubes")
+    rows = cur.fetchall()
+
+    cur.close()
     conn.close()
+
     return {
-    "sold": [
-        {"cube_id": row[0], "sold_at": row[1]}
-        for row in rows
-    ]
+        "sold": [
+            {"cube_id": row[0], "sold_at": str(row[1])}
+            for row in rows
+        ]
     }
 @app.route("/api/sold", methods=["POST"])
 def add_sold():
     data = request.get_json()
     cube_id = int(data["cube_id"])
 
-    conn = sqlite3.connect("million_cubes.db")
+    conn = get_conn()
+    cur = conn.cursor()
+
     try:
-        conn.execute(
-            "INSERT INTO sold_cubes (cube_id, sold_at) VALUES (?, CURRENT_TIMESTAMP)",
+        cur.execute(
+            "INSERT INTO sold_cubes (cube_id) VALUES (%s)",
             (cube_id,)
         )
         conn.commit()
-    except sqlite3.IntegrityError:
+
+    except psycopg2.IntegrityError:
+        conn.rollback()
+        cur.close()
         conn.close()
         return {"ok": False, "error": "already_sold"}, 409
 
+    cur.close()
     conn.close()
+
     return {"ok": True, "cube_id": cube_id}
 
 @app.route("/api/create-checkout-session", methods=["POST"])
@@ -85,7 +98,9 @@ def stripe_webhook():
 
     try:
         event = stripe.Webhook.construct_event(
-            payload, sig_header, endpoint_secret
+            payload,
+            sig_header,
+            endpoint_secret
         )
     except (ValueError, stripe.error.SignatureVerificationError):
         return {"error": "invalid webhook"}, 400
@@ -94,12 +109,16 @@ def stripe_webhook():
         session = event["data"]["object"]
         cube_id = int(session["metadata"]["cube_id"])
 
-        conn = sqlite3.connect("million_cubes.db")
-        conn.execute(
-            "INSERT OR IGNORE INTO sold_cubes (cube_id) VALUES (?)",
+        conn = get_conn()
+        cur = conn.cursor()
+
+        cur.execute(
+            "INSERT INTO sold_cubes (cube_id) VALUES (%s) ON CONFLICT (cube_id) DO NOTHING",
             (cube_id,)
         )
+
         conn.commit()
+        cur.close()
         conn.close()
 
     return {"ok": True}, 200
