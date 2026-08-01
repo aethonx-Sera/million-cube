@@ -1,19 +1,26 @@
 from flask import Flask, send_from_directory, request, jsonify
 import sqlite3
+import psycopg2
 import stripe
 import os
 
 app = Flask(__name__)
 stripe.api_key = os.environ.get("STRIPE_SECRET_KEY")
+def get_conn():
+    return psycopg2.connect(os.environ["DATABASE_URL"])
+
+
 def init_db():
-    conn = sqlite3.connect("million_cubes.db")
-    conn.execute("""
+    conn = get_conn()
+    cur = conn.cursor()
+    cur.execute("""
         CREATE TABLE IF NOT EXISTS sold_cubes (
             cube_id INTEGER PRIMARY KEY,
-sold_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            sold_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     """)
     conn.commit()
+    cur.close()
     conn.close()
 
 init_db()
