@@ -100,12 +100,5 @@ def stripe_webhook():
 def home():
     return send_from_directory(".", "index.html")
 
-@app.route("/api/sold")
-def get_sold():
-    conn = sqlite3.connect("million_cubes.db")
-    rows = conn.execute("SELECT cube_id FROM sold_cubes").fetchall()
-    conn.close()
-    return jsonify([row[0] for row in rows])
-
 if __name__ == "__main__":
     app.run(debug=True, port=8000)
