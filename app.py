@@ -79,7 +79,7 @@ def create_checkout_session():
                 "product_data": {
                     "name": f"Cubetto #{cube_id}",
                 },
-                "unit_amount": 100,
+                "unit_amount": 200,
             },
             "quantity": 1,
         }],
